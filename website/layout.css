@@ -1,0 +1,63 @@
+/*
+ * Created Date: Apr 26 2024, 02:11:53 PM
+ * Author: @WhoTho#9592 whotho06@gmail.com
+ * -----
+ * Last Modified: Apr 26 2024, 02:49:05 PM
+ * Modified By: @WhoTho#9592
+ * -----
+ * CHANGE LOG:
+ * Date                        | Comments
+ * ----------------------------+---------------------------------------------
+ */
+
+:root {
+    --color-darkest: #0b1424;
+    --color-darkest-lighter: #111925;
+    --color-dark: #25375c;
+    --color-light: #5c7391;
+    --color-lightest: #aec3d6;
+    --color-black: #111111;
+    --color-white: #efefef;
+
+    --color-tile-highlighted: rgba(255, 0, 0, 0.5);
+}
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    height: 100vh;
+    color: var(--color-white);
+}
+
+.container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    height: 100%;
+}
+
+.options {
+    width: 20%;
+    height: 100%;
+    background-color: var(--color-darkest);
+    padding: 10px;
+}
+
+.board-container {
+    width: 60%;
+    height: 100%;
+    background-color: var(--color-darkest-lighter);
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.info {
+    width: 20%;
+    height: 100%;
+    background-color: var(--color-darkest);
+    padding: 10px;
+}

@@ -1,0 +1,41 @@
+/*
+ * Created Date: Apr 26 2024, 02:38:01 PM
+ * Author: @WhoTho#9592 whotho06@gmail.com
+ * -----
+ * Last Modified: Apr 26 2024, 02:42:34 PM
+ * Modified By: @WhoTho#9592
+ * -----
+ * CHANGE LOG:
+ * Date                        | Comments
+ * ----------------------------+---------------------------------------------
+ */
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+
+    width: 500px;
+    height: 500px;
+    outline: 5px solid var(--color-black);
+}
+
+.tile {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    color: red;
+}
+
+.tile.white {
+    background-color: var(--color-light);
+}
+
+.tile.black {
+    background-color: var(--color-dark);
+}
+
+.tile.highlighted {
+    background-color: overlay(var(--color-tile-highlighted), var(--color-dark));
+}
