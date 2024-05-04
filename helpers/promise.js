@@ -1,8 +1,8 @@
 /**
- * Created Date: Apr 26 2024, 02:12:17 PM
+ * Created Date: May 04 2024, 12:13:16 PM
  * Author: @WhoTho#9592 whotho06@gmail.com
  * -----
- * Last Modified: May 04 2024, 10:14:12 AM
+ * Last Modified: May 04 2024, 12:13:27 PM
  * Modified By: @WhoTho#9592
  * -----
  * CHANGE LOG:
@@ -10,4 +10,6 @@
  * ----------------------------+---------------------------------------------
  */
 
-import Website from "./website/website.js";
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export { sleep };

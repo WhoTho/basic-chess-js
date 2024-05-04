@@ -2,7 +2,7 @@
  * Created Date: Apr 26 2024, 02:11:53 PM
  * Author: @WhoTho#9592 whotho06@gmail.com
  * -----
- * Last Modified: Apr 26 2024, 02:49:05 PM
+ * Last Modified: May 04 2024, 04:16:40 PM
  * Modified By: @WhoTho#9592
  * -----
  * CHANGE LOG:
@@ -46,6 +46,8 @@ body {
 }
 
 .board-container {
+    position: relative;
+
     width: 60%;
     height: 100%;
     background-color: var(--color-darkest-lighter);

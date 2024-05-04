@@ -2,7 +2,7 @@
 Created Date: Apr 26 2024, 02:09:53 PM
 Author: @WhoTho#9592 whotho06@gmail.com
 -----
-Last Modified: Apr 26 2024, 02:39:06 PM
+Last Modified: May 04 2024, 04:13:43 PM
 Modified By: @WhoTho#9592
 -----
 CHANGE LOG:
@@ -21,13 +21,24 @@ Date                        | Comments
     <body>
         <div class="container">
             <div class="options">
+                <button id="startBtn">Start Game</button>
+                <button id="resetBtn">Reset Game</button>
+
+                <button id="undoBtn">Undo Move</button>
             </div>
             <div class="board-container">
                 <div id="board"></div>
+                <div id="promotion-options">
+                    <button id="queen-promotion"></button>
+                    <button id="rook-promotion"></button>
+                    <button id="bishop-promotion"></button>
+                    <button id="knight-promotion"></button>
+                </div>
             </div>
             <div class="info">
             </div>
         </div>
+        
     </body>
     <script type="module" src="../index.js"></script>
 </html>
