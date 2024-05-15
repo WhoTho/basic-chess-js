@@ -2,7 +2,7 @@
  * Created Date: May 04 2024, 12:37:29 PM
  * Author: @WhoTho#9592 whotho06@gmail.com
  * -----
- * Last Modified: May 04 2024, 04:07:13 PM
+ * Last Modified: May 05 2024, 01:16:35 PM
  * Modified By: @WhoTho#9592
  * -----
  * CHANGE LOG:
@@ -14,8 +14,8 @@ import Piece from "./piece.js";
 import Move from "../move.js";
 
 class Pawn extends Piece {
-    constructor(player) {
-        super(player, "pawn", player === "white" ? "P" : "p", 1);
+    constructor(board, player) {
+        super(board, player, "pawn", player === "white" ? "P" : "p", 1);
 
         this.direction = this.player === "white" ? -1 : 1;
         this.canMoveDoubleForwardRank = this.player === "white" ? 6 : 1;
@@ -23,32 +23,32 @@ class Pawn extends Piece {
         this.prePromotionRank = this.player === "white" ? 1 : 6;
     }
 
-    getMoves(tile, board) {
+    getMoves(tile) {
         let moves = [];
 
-        let forwardTile = board.tileAt(tile.x, tile.y + this.direction);
+        let forwardTile = this.board.tileAt(tile.x, tile.y + this.direction);
         if (forwardTile && !forwardTile.piece) {
             moves.push(new Move(tile, forwardTile));
         }
 
         if (tile.y === this.canMoveDoubleForwardRank && !forwardTile.piece) {
-            let doubleForwardTile = board.tileAt(tile.x, tile.y + 2 * this.direction);
+            let doubleForwardTile = this.board.tileAt(tile.x, tile.y + 2 * this.direction);
             if (!doubleForwardTile.piece) {
                 moves.push(new Move(tile, doubleForwardTile, { doubleForwardPawn: true }));
             }
         }
 
-        let leftDiagonalTile = board.tileAt(tile.x - 1, tile.y + this.direction);
+        let leftDiagonalTile = this.board.tileAt(tile.x - 1, tile.y + this.direction);
         if (leftDiagonalTile && leftDiagonalTile.piece && leftDiagonalTile.piece.player !== this.player) {
             moves.push(new Move(tile, leftDiagonalTile, { capturedPiece: leftDiagonalTile.piece }));
         }
 
-        let rightDiagonalTile = board.tileAt(tile.x + 1, tile.y + this.direction);
+        let rightDiagonalTile = this.board.tileAt(tile.x + 1, tile.y + this.direction);
         if (rightDiagonalTile && rightDiagonalTile.piece && rightDiagonalTile.piece.player !== this.player) {
             moves.push(new Move(tile, rightDiagonalTile, { capturedPiece: rightDiagonalTile.piece }));
         }
 
-        moves = this.addPromotionMoves(tile, board, moves);
+        moves = this.addPromotionMoves(tile, moves);
 
         if (tile.y !== this.canEnPassantRank) {
             return moves;
@@ -56,7 +56,7 @@ class Pawn extends Piece {
 
         // might be able to en passant cuz the pawn is at the right rank
 
-        let leftTile = board.tileAt(tile.x - 1, tile.y);
+        let leftTile = this.board.tileAt(tile.x - 1, tile.y);
         if (
             leftTile &&
             leftTile.piece &&
@@ -73,7 +73,7 @@ class Pawn extends Piece {
             );
         }
 
-        let rightTile = board.tileAt(tile.x + 1, tile.y);
+        let rightTile = this.board.tileAt(tile.x + 1, tile.y);
         if (
             rightTile &&
             rightTile.piece &&
@@ -93,7 +93,7 @@ class Pawn extends Piece {
         return moves;
     }
 
-    addPromotionMoves(tile, board, moves) {
+    addPromotionMoves(tile, moves) {
         if (tile.y !== this.prePromotionRank) {
             return moves;
         }

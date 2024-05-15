@@ -2,7 +2,7 @@
  * Created Date: May 04 2024, 01:11:16 PM
  * Author: @WhoTho#9592 whotho06@gmail.com
  * -----
- * Last Modified: May 04 2024, 04:11:48 PM
+ * Last Modified: May 05 2024, 01:17:20 PM
  * Modified By: @WhoTho#9592
  * -----
  * CHANGE LOG:
@@ -13,8 +13,8 @@
 import Piece from "./piece.js";
 
 class Rook extends Piece {
-    constructor(player) {
-        super(player, "rook", player === "white" ? "R" : "r", 5.05);
+    constructor(board, player) {
+        super(board, player, "rook", player === "white" ? "R" : "r", 5.05);
 
         this.movementOffsets = [
             [-1, 0],
@@ -25,8 +25,8 @@ class Rook extends Piece {
         this.maxMovements = 8;
     }
 
-    getMoves(tile, board) {
-        let moves = super.getMoves(tile, board);
+    getMoves(tile) {
+        let moves = super.getMoves(tile);
 
         if (tile.flags.kingCanCastle) {
             for (let move of moves) {

@@ -2,7 +2,7 @@
  * Created Date: May 04 2024, 01:11:53 PM
  * Author: @WhoTho#9592 whotho06@gmail.com
  * -----
- * Last Modified: May 04 2024, 01:42:44 PM
+ * Last Modified: May 05 2024, 02:59:32 PM
  * Modified By: @WhoTho#9592
  * -----
  * CHANGE LOG:
@@ -14,8 +14,8 @@ import Piece from "./piece.js";
 import Move from "../move.js";
 
 class King extends Piece {
-    constructor(player) {
-        super(player, "king", player === "white" ? "K" : "k", 1000);
+    constructor(board, player) {
+        super(board, player, "king", player === "white" ? "K" : "k", 1000);
 
         this.movementOffsets = [
             [-1, -1],
@@ -27,34 +27,39 @@ class King extends Piece {
             [1, 0],
             [1, 1],
         ];
-
-        this.kingSideDirection = this.player === "white" ? 1 : -1;
     }
 
-    getMoves(tile, board) {
-        let moves = super.getMoves(tile, board);
+    getMoves(tile) {
+        let moves = super.getMoves(tile);
 
         if (!tile.flags.kingCanCastle) {
             return moves;
         }
 
-        let kingSideRookTile = board.tileAt(tile.x + this.kingSideDirection * 3, tile.y);
-
-        if (kingSideRookTile?.flags?.kingCanCastle) {
-            let kingSideTile1 = board.tileAt(tile.x + this.kingSideDirection, tile.y);
-            let kingSideTile2 = board.tileAt(tile.x + this.kingSideDirection * 2, tile.y);
+        let kingSideRookTile = this.board.tileAt(tile.x + 3, tile.y);
+        if (
+            kingSideRookTile?.piece?.name === "rook" &&
+            kingSideRookTile?.piece?.player === this.player &&
+            kingSideRookTile.flags.kingCanCastle
+        ) {
+            let kingSideTile1 = this.board.tileAt(tile.x + 1, tile.y);
+            let kingSideTile2 = this.board.tileAt(tile.x + 2, tile.y);
 
             if (!kingSideTile1.piece && !kingSideTile2.piece) {
                 moves.push(new Move(tile, kingSideTile2, { castling: true }));
             }
         }
 
-        let queenSideRookTile = board.tileAt(tile.x - 4, tile.y);
+        let queenSideRookTile = this.board.tileAt(tile.x - 4, tile.y);
 
-        if (queenSideRookTile?.flags?.kingCanCastle) {
-            let queenSideTile1 = board.tileAt(tile.x - 1, tile.y);
-            let queenSideTile2 = board.tileAt(tile.x - 2, tile.y);
-            let queenSideTile3 = board.tileAt(tile.x - 3, tile.y);
+        if (
+            queenSideRookTile?.piece?.name === "rook" &&
+            queenSideRookTile?.piece?.player === this.player &&
+            queenSideRookTile.flags.kingCanCastle
+        ) {
+            let queenSideTile1 = this.board.tileAt(tile.x - 1, tile.y);
+            let queenSideTile2 = this.board.tileAt(tile.x - 2, tile.y);
+            let queenSideTile3 = this.board.tileAt(tile.x - 3, tile.y);
 
             if (!queenSideTile1.piece && !queenSideTile2.piece && !queenSideTile3.piece) {
                 moves.push(new Move(tile, queenSideTile2, { castling: true }));

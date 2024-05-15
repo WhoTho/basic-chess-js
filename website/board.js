@@ -2,7 +2,7 @@
  * Created Date: Apr 26 2024, 02:08:07 PM
  * Author: @WhoTho#9592 whotho06@gmail.com
  * -----
- * Last Modified: May 04 2024, 04:51:38 PM
+ * Last Modified: May 06 2024, 02:58:19 PM
  * Modified By: @WhoTho#9592
  * -----
  * CHANGE LOG:
@@ -18,25 +18,44 @@ import Knight from "./pieces/knight.js";
 import Bishop from "./pieces/bishop.js";
 import Queen from "./pieces/queen.js";
 import King from "./pieces/king.js";
+import StandardNotation from "./standardNotationIntegration.js";
 
-const FEN = {
-    start: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    promotion: "4p3/1k1P4/8/pB2p3/P1R5/1KP5/8/4q3 w - - 1 87",
-}.promotion;
+/* 
+TODO
+
+
+make move algebraic notation
+
+
+
+
+add ui for selecting players
+add system for playing multiple games
+ - fix endGame
+
+
+FIXME
+work out en passant undo move when loading fen with en passant (no previous move to reenable en passant flag)
+castling through check
+*/
 
 class Board {
-    constructor() {
+    constructor(options = {}) {
         this.initGameVariables();
-        this.initElement();
+        this.initOptions(options);
+        if (this.options.gui) this.initElement();
 
         this.initPieces();
         this.initTiles();
         this.initAudio();
-        this.initPromotionOptions();
+        if (this.options.gui) this.initPromotionOptions();
 
-        this.loadFEN(FEN);
+        this.initStandardNotation();
 
-        this.startGame();
+        // this.blackPlayer = new V1_SimpleMiniMax("black", this);
+
+        this.whitePlayer = "human";
+        this.blackPlayer = "human";
     }
 
     initGameVariables() {
@@ -48,6 +67,16 @@ class Board {
         this.selectingPromotion = false;
     }
 
+    initOptions(options) {
+        this.options = Object.assign(
+            {
+                gui: true,
+                maxMoves: 1_000,
+            },
+            options
+        );
+    }
+
     initElement() {
         this.element = document.getElementById("board");
     }
@@ -56,12 +85,12 @@ class Board {
         this.pieces = [];
 
         for (let player of ["white", "black"]) {
-            this.pieces.push(new Pawn(player));
-            this.pieces.push(new Rook(player));
-            this.pieces.push(new Knight(player));
-            this.pieces.push(new Bishop(player));
-            this.pieces.push(new Queen(player));
-            this.pieces.push(new King(player));
+            this.pieces.push(new Pawn(this, player));
+            this.pieces.push(new Rook(this, player));
+            this.pieces.push(new Knight(this, player));
+            this.pieces.push(new Bishop(this, player));
+            this.pieces.push(new Queen(this, player));
+            this.pieces.push(new King(this, player));
         }
     }
 
@@ -79,6 +108,7 @@ class Board {
     }
 
     initAudio() {
+        if (!this.options.gui) return;
         this.sounds = {
             selfMove: new Audio("./assets/move-self.mp3"),
             opponentMove: new Audio("./assets/move-opponent.mp3"),
@@ -86,11 +116,13 @@ class Board {
             check: new Audio("./assets/move-check.mp3"),
             gameEnd: new Audio("./assets/game-end.mp3"),
             promote: new Audio("./assets/promote.mp3"),
+            castle: new Audio("./assets/castle.mp3"),
         };
     }
 
     initPromotionOptions() {
-        // todo put piece imag there
+        if (!this.options.gui) return;
+
         this.promotion = {
             element: document.getElementById("promotion-options"),
             queen: document.getElementById("queen-promotion"),
@@ -120,56 +152,57 @@ class Board {
         }
     }
 
-    resetGame() {
-        this.loadFEN(FEN);
+    initStandardNotation() {
+        this.standardNotation = new StandardNotation(this);
+    }
+
+    setWhitePlayer(player) {
+        if (!player) {
+            this.whitePlayer = "human";
+        } else {
+            this.whitePlayer = new player("white", this);
+        }
+    }
+
+    setBlackPlayer(player) {
+        if (!player) {
+            this.blackPlayer = "human";
+        } else {
+            this.blackPlayer = new player("black", this);
+        }
+    }
+
+    resetGame(fen) {
+        this.standardNotation.loadFEN(fen);
         this.startGame();
     }
 
     startGame() {
         this.playing = true;
-        this.moves = [];
-        this.tiles[0][0].flags.kingCanCastle = true;
-        this.tiles[0][4].flags.kingCanCastle = true;
-        this.tiles[0][7].flags.kingCanCastle = true;
-        this.tiles[7][0].flags.kingCanCastle = true;
-        this.tiles[7][4].flags.kingCanCastle = true;
-        this.tiles[7][7].flags.kingCanCastle = true;
+        // this.moves = []; moved to loadFEN
 
-        this.gameLoop();
+        this.seenBoards = new Map();
+
+        return this.gameLoop();
     }
 
-    loadFEN(fen) {
+    destyleTiles() {
+        if (!this.options.gui) return;
+
+        for (let row of this.tiles) {
+            for (let tile of row) {
+                tile.destyle();
+            }
+        }
+    }
+
+    clearBoard() {
         for (let row of this.tiles) {
             for (let tile of row) {
                 tile.setPiece(null);
+                tile.resetFlags();
             }
         }
-
-        this.destyleTiles();
-
-        let [board, turn, castling, enPassant, halfMove, fullMove] = fen.split(" ");
-
-        let rank = 0;
-        let file = 0;
-
-        for (let char of board) {
-            if (char === "/") {
-                rank++;
-                file = 0;
-                continue;
-            }
-
-            if (isNaN(char)) {
-                let piece = this.pieces.find((piece) => piece.fenNotation === char);
-                this.tiles[rank][file].setPiece(piece);
-                this.tiles[rank][file].render();
-                file++;
-            } else {
-                file += parseInt(char);
-            }
-        }
-
-        this.playerTurn = turn === "w" ? "white" : "black";
     }
 
     tileAt(x, y) {
@@ -184,11 +217,17 @@ class Board {
     }
 
     tileClicked(tile) {
+        if (!this.options.gui) return;
+
         if (this.selectingPromotion) {
             return;
         }
 
-        if (!this.playing || this.playerTurn !== "white" || (!this.selectedTile && tile.piece?.player !== "white")) {
+        if (
+            !this.playing ||
+            (this.playerTurn === "white" ? this.whitePlayer !== "human" : this.blackPlayer !== "human") ||
+            (!this.selectedTile && tile.piece?.player !== this.playerTurn)
+        ) {
             return;
         }
 
@@ -202,10 +241,17 @@ class Board {
             for (let move of this.validMoves) {
                 if (move.targetTile !== tile) continue;
                 if (move.flags.promotingTo) {
-                    // FIXME pawn cant be clicked after clicking off when promoting
-                    // player can promote
                     this.promotion.element.style.display = "block";
-                    this.promotion.element.style.top = `${tile.element.offsetTop + this.element.offsetTop}px`;
+
+                    let topOffset;
+                    if (this.playerTurn === "white") {
+                        topOffset = tile.element.offsetTop + this.element.offsetTop;
+                    } else {
+                        topOffset =
+                            tile.element.offsetTop + this.element.offsetTop - this.promotion.element.offsetHeight;
+                    }
+
+                    this.promotion.element.style.top = `${topOffset}px`;
                     this.promotion.element.style.left = `${tile.element.offsetLeft + this.element.offsetLeft}px`;
                     this.selectingPromotion = true;
 
@@ -242,65 +288,123 @@ class Board {
         }
     }
 
-    destyleTiles() {
-        for (let row of this.tiles) {
-            for (let tile of row) {
-                tile.destyle();
-            }
-        }
-    }
-
     playMove(move) {
-        console.log(move.toMoveNotation());
-
         this.doMove(move);
         this.renderAllTiles();
 
-        if (this.isInCheck(this.playerTurn === "white" ? "black" : "white")) {
-            this.sounds.check.play();
-        } else if (move.flags.capturedPiece) {
-            this.sounds.capture.play();
-        } else if (move.flags.promotingTo) {
-            this.sounds.promote.play();
-        } else {
-            this.sounds.selfMove.play();
+        if (this.options.gui) {
+            if (this.isInCheck(this.playerTurn === "white" ? "black" : "white")) {
+                this.sounds.check.play();
+            } else if (move.flags.capturedPiece) {
+                this.sounds.capture.play();
+            } else if (move.flags.promotingTo) {
+                this.sounds.promote.play();
+            } else if (move.flags.castling) {
+                this.sounds.castle.play();
+            } else {
+                this.sounds.selfMove.play();
+            }
         }
 
-        if (this.playerTurn === "white") {
+        if (this.getCurrentPlayer() === "human") {
             this.manualMove = true;
         }
+    }
+
+    getCurrentPlayer() {
+        return this.playerTurn === "white" ? this.whitePlayer : this.blackPlayer;
     }
 
     nextPlayerTurn() {
         this.playerTurn = this.playerTurn === "white" ? "black" : "white";
     }
 
+    previousPlayerTurn() {
+        this.nextPlayerTurn();
+    }
+
     async gameLoop() {
         while (this.playing) {
-            if (!(await this.whiteTurn())) {
-                this.playing = false;
-                this.showGameEnd("black");
-                break;
+            if (!(await this.takeTurn())) {
+                if (!this.isInCheck(this.playerTurn)) {
+                    return this.gameEnd("draw-stalemate");
+                } else {
+                    return this.gameEnd(this.playerTurn === "white" ? "black" : "white");
+                }
+            }
+
+            if (this.checkForRepetition()) {
+                return this.gameEnd("draw-repetition");
+            }
+
+            if (this.checkForInsufficientMaterial()) {
+                return this.gameEnd("draw-insufficientMaterial");
+            }
+
+            if (this.moves.length >= this.options.maxMoves) {
+                return this.gameEnd("draw-maxMoves");
             }
 
             this.nextPlayerTurn();
+        }
 
-            if (!(await this.blackTurn())) {
-                this.playing = false;
-                this.showGameEnd("white");
-                break;
-            }
-            this.nextPlayerTurn();
+        return "draw-unknown";
+    }
+
+    gameEnd(winner) {
+        this.playing = false;
+
+        if (this.options.gui) {
+            this.renderAllTiles();
+            this.sounds.gameEnd.play();
+            setTimeout(() => {
+                if (winner.startsWith("draw")) {
+                    alert(`Game Over! Draw! ${winner.split("-")[1]}`);
+                } else {
+                    alert(`Game Over! ${winner} wins!`);
+                }
+            }, 1000);
+        }
+
+        return winner;
+    }
+
+    async takeTurn() {
+        let currentPlayer = this.getCurrentPlayer();
+
+        if (this.generateAllValidMoves().length === 0) {
+            return false;
+        }
+
+        if (currentPlayer === "human") {
+            return this.humanMove();
+        } else {
+            return this.engineMove(currentPlayer);
         }
     }
 
-    showGameEnd(winner) {
-        this.sounds.gameEnd.play();
-        alert(`Game Over! ${winner} wins!`);
+    async engineMove(currentPlayer) {
+        if (this.options.gui) {
+            await sleep(10);
+        }
+
+        let move = currentPlayer.getMove();
+
+        if (!move) {
+            return false;
+        }
+
+        this.playMove(move);
+
+        return true;
     }
 
-    async whiteTurn() {
+    async humanMove() {
         this.manualMove = false;
+
+        if (this.generateAllValidMoves(this.playerTurn).length === 0) {
+            return false;
+        }
 
         while (!this.manualMove) {
             await sleep(1000);
@@ -311,39 +415,30 @@ class Board {
         return true;
     }
 
-    async blackTurn() {
-        let allMoves = [];
+    generateAllValidMoves(player = this.playerTurn) {
+        let moves = [];
 
         for (let row of this.tiles) {
             for (let tile of row) {
-                if (tile.piece?.player === "black") {
-                    let moves = tile.getMoves();
-                    allMoves.push(...moves);
+                if (tile.piece?.player === player) {
+                    let pieceMoves = tile.getMoves();
+                    moves.push(...pieceMoves);
                 }
             }
         }
 
-        allMoves = allMoves.filter((move) => this.isValidMove(move));
+        moves = moves.filter((move) => this.isValidMove(move));
 
-        if (allMoves.length === 0) {
-            return false;
-        }
-
-        let move = allMoves[Math.floor(Math.random() * allMoves.length)];
-        this.playMove(move);
-
-        return true;
+        return moves;
     }
 
-    // generateAllMoves(player) {
-    //     let moves = [];
+    isValidMove(move, player = this.playerTurn) {
+        if (move.flags.castling) {
+            return this.isValidCastle(move, player);
+        }
 
-    //     return moves;
-    // }
-
-    isValidMove(move) {
         this.doMove(move);
-        let isInCheck = this.isInCheck();
+        let isInCheck = this.isInCheck(player);
         this.undoMove();
 
         return !isInCheck;
@@ -361,7 +456,6 @@ class Board {
         }
 
         if (!kingTile) {
-            console.log("No king found");
             return false;
         }
 
@@ -383,6 +477,37 @@ class Board {
         }
 
         return isKingInCheck;
+    }
+
+    isValidCastle(move, player) {
+        if (this.isInCheck(player)) {
+            return false;
+        }
+
+        // check if opponent can attack any of the tiles the king will move through
+        let kingTile = move.originalTile;
+        let destinationTile = move.targetTile;
+
+        let direction = destinationTile.x < kingTile.x ? -1 : 1;
+
+        let tilesToCheck = [kingTile, this.tileAt(kingTile.x + direction, kingTile.y), destinationTile];
+
+        for (let row of this.tiles) {
+            for (let tile of row) {
+                if (!tile.piece || tile.piece.player === player) {
+                    continue;
+                }
+
+                let moves = tile.getMoves();
+                for (let move of moves) {
+                    if (tilesToCheck.includes(move.targetTile)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     doMove(move) {
@@ -467,9 +592,8 @@ class Board {
         }
 
         if (move.flags.promotingTo) {
-            // piece.player !== this.playerTurn because the turn has not yet been switched
             move.originalTile.setPiece(
-                this.pieces.find((piece) => piece.player !== this.playerTurn && piece.name === "pawn")
+                this.pieces.find((piece) => piece.player === this.playerTurn && piece.name === "pawn")
             );
         }
 
@@ -488,7 +612,49 @@ class Board {
         }
     }
 
+    checkForRepetition() {
+        let board = this.standardNotation.boardToFEN();
+
+        if (this.seenBoards.has(board)) {
+            this.seenBoards.set(board, this.seenBoards.get(board) + 1);
+        } else {
+            this.seenBoards.set(board, 1);
+        }
+
+        if (this.seenBoards.get(board) >= 3) {
+            return true;
+        }
+
+        return false;
+    }
+
+    checkForInsufficientMaterial() {
+        let pieces = [];
+
+        for (let row of this.tiles) {
+            for (let tile of row) {
+                if (tile.piece) {
+                    pieces.push(tile.piece);
+                }
+            }
+        }
+
+        if (pieces.length === 2) {
+            return true;
+        }
+
+        if (pieces.length === 3) {
+            if (pieces.some((piece) => piece.name === "bishop")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     renderAllTiles() {
+        if (!this.options.gui) return;
+
         for (let row of this.tiles) {
             for (let tile of row) {
                 tile.render();
@@ -511,17 +677,14 @@ class Tile {
         this.x = x;
         this.y = y;
         this.color = color;
-        this.flags = {
-            doubleForwardPawn: false,
-            kingCanCastle: false,
-        };
+        this.resetFlags();
 
         this.piece = null;
 
         this.file = String.fromCharCode(97 + x);
         this.rank = 8 - y;
 
-        this.initElement();
+        if (this.board.options.gui) this.initElement();
     }
 
     initElement() {
@@ -538,11 +701,20 @@ class Tile {
         });
     }
 
+    resetFlags() {
+        this.flags = {
+            doubleForwardPawn: false,
+            kingCanCastle: false,
+        };
+    }
+
     setPiece(piece) {
         this.piece = piece;
     }
 
     render() {
+        if (!this.board.options.gui) return;
+
         this.element.innerHTML = "";
 
         if (!this.piece) return;
@@ -551,14 +723,20 @@ class Tile {
     }
 
     select() {
+        if (!this.board.options.gui) return;
+
         this.element.classList.add("selected");
     }
 
     highlight() {
+        if (!this.board.options.gui) return;
+
         this.element.classList.add("highlighted");
     }
 
     destyle() {
+        if (!this.board.options.gui) return;
+
         this.element.classList.remove("selected");
         this.element.classList.remove("highlighted");
     }
@@ -568,7 +746,7 @@ class Tile {
             return [];
         }
 
-        return this.piece.getMoves(this, this.board);
+        return this.piece.getMoves(this);
     }
 }
 
